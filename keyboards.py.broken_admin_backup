@@ -1,0 +1,167 @@
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from config import OWNER_ID
+
+BTN_USER_1 = "📩 𝗠𝗲𝗻𝗴𝗮 𝗥𝗲𝗸𝗹𝗮𝗺𝗮 𝗞𝗲𝗹𝗱𝗶"
+BTN_USER_2 = "🎭 𝗠𝗮𝗳𝗶𝗮 𝗥𝗼𝗹𝗹𝗮𝗿 𝗯𝗼'𝘆𝗶𝗰𝗵𝗮 𝗦𝗮𝘃𝗼𝗹𝗹𝗮𝗿"
+BTN_USER_3 = "⚠️ 𝗚𝘂𝗿𝘂𝗵 𝗔𝗱𝗺𝗶𝗻𝗴𝗮 𝗦𝗵𝗶𝗸𝗼𝘆𝗮𝘁"
+
+BTN_ADMIN_4 = "👥 𝗥𝗲𝗸𝗹𝗮𝗺𝗮 𝗞𝗲𝗹𝗴𝗮𝗻 𝗚𝘂𝗿𝘂𝗵𝗹𝗮𝗿"
+BTN_ADMIN_5 = "📅 𝗕𝘂𝗴𝘂𝗻 𝗞𝗲𝗹𝗴𝗮𝗻 𝗥𝗲𝗸𝗹𝗮𝗺𝗮𝗹𝗮𝗿"
+BTN_ADMIN_6 = "📊 𝗘𝗻𝗴 𝗞𝗼'𝗽 𝗸𝗲𝗹𝗴𝗮𝗻 𝗚𝘂𝗿𝘂𝗵 𝗿𝗲𝗸𝗹𝗮𝗺𝗮𝘀𝗶"
+BTN_ADMIN_7 = "📱 𝗔𝗰𝗰𝗼𝘂𝗻𝘁 𝗨𝗹𝗮𝘀𝗵 𝗥𝗲𝗸𝗹𝗮𝗺𝗮 𝗨𝗰𝗵𝘂𝗻"
+BTN_ADMIN_8 = "🏆 𝗚𝘂𝗿𝘂𝗵𝗱𝗮 𝗧𝗼𝗽 𝟱 𝗔𝗸𝘁𝗶𝘃 𝗢𝗱𝗮𝗺𝗹𝗮𝗿"
+
+BTN_OWNER_9 = "⚙️ 𝗔𝗱𝗺𝗶𝗻𝗹𝗮𝗿𝗻𝗶 𝗕𝗼𝘀𝗵𝗾𝗮𝗿𝗶𝘀𝗵"
+BTN_BACK = "⬅️ 𝗢𝗿𝗾𝗮𝗴𝗮"
+
+back_keyboard = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text=BTN_BACK)]],
+    resize_keyboard=True
+)
+
+def get_main_menu(user_id: int, admins_list: list) -> InlineKeyboardMarkup:
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text=BTN_USER_1,
+                callback_data="menu_ad"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=BTN_USER_2,
+                callback_data="menu_roles"
+            ),
+            InlineKeyboardButton(
+                text=BTN_USER_3,
+                callback_data="menu_complaint"
+            )
+        ]
+    ]
+
+    try:
+        admin_ids = {int(x) for x in admins_list}
+    except (TypeError, ValueError):
+        admin_ids = set()
+
+    is_admin = (
+        int(user_id) == int(OWNER_ID)
+        or int(user_id) in admin_ids
+    )
+
+    if is_admin:
+        buttons.extend([
+            [
+                InlineKeyboardButton(
+                    text=BTN_ADMIN_4,
+                    callback_data="menu_groups"
+                ),
+                InlineKeyboardButton(
+                    text=BTN_ADMIN_5,
+                    callback_data="menu_today_ads"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=BTN_ADMIN_6,
+                    callback_data="menu_statistics"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=BTN_ADMIN_7,
+                    callback_data="menu_account_ads"
+                ),
+                InlineKeyboardButton(
+                    text=BTN_ADMIN_8,
+                    callback_data="menu_top_active"
+                )
+            ]
+        ])
+
+    if int(user_id) == int(OWNER_ID):
+        buttons.append([
+            InlineKeyboardButton(
+                text=BTN_OWNER_9,
+                callback_data="menu_admin_manage"
+            )
+        ])
+
+    return InlineKeyboardMarkup(
+        inline_keyboard=buttons
+    )
+
+
+def get_roles_inline_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            # 1] TINCH AHOLILAR TOMONDA
+            [InlineKeyboardButton(text="👨🏼 Tinch aholi", callback_data="role_fuqaro"), InlineKeyboardButton(text="💃 Kezuvchi", callback_data="role_kezuvchi")],
+            [InlineKeyboardButton(text="👮🏻‍♂ Serjant", callback_data="role_serjant"), InlineKeyboardButton(text="🕵🏻‍♂ Komissar katani", callback_data="role_komissar")],
+            [InlineKeyboardButton(text="👨🏻‍⚕ Doktor", callback_data="role_doktor"), InlineKeyboardButton(text="🧙‍♂ Daydi", callback_data="role_daydi")],
+            [InlineKeyboardButton(text="🧞‍♂️ Afsungar", callback_data="role_afsungar"), InlineKeyboardButton(text="🤞 Omadli", callback_data="role_omadli")],
+            [InlineKeyboardButton(text="🎖️ Janob", callback_data="role_janob")],
+
+            # 2] MAFIYA TOMONDA
+            [InlineKeyboardButton(text="🤵🏻 Don", callback_data="role_don"), InlineKeyboardButton(text="🤵🏼 Mafiya", callback_data="role_mafia")],
+            [InlineKeyboardButton(text="👨‍💼 Advokat", callback_data="role_advokat"), InlineKeyboardButton(text="🕴 Убийца", callback_data="role_ubiyca")],
+            [InlineKeyboardButton(text="👩‍💻 Jurnalist", callback_data="role_jurnalist")],
+
+            # 3] ERKIN VA YAKKAXON ROLLAR
+            [InlineKeyboardButton(text="🔪 Qotil", callback_data="role_qotil"), InlineKeyboardButton(text="🐺 Bo'ri", callback_data="role_bori")],
+            [InlineKeyboardButton(text="🤓 Sotqin", callback_data="role_sotqin"), InlineKeyboardButton(text="🧙‍ Sexrgar", callback_data="role_sehrgar")],
+            [InlineKeyboardButton(text="🧟 G'azabkor", callback_data="role_gazabkor"), InlineKeyboardButton(text="🤹 Aferist", callback_data="role_aferist")],
+
+            # 💬 PROFILE LINK TUGMA
+            [InlineKeyboardButton(text="💬 Batafsil so'rash uchun", url="https://t.me/skroozy")]
+        ]
+    )
+
+def get_back_to_roles_inline() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Rollar ro'yxatiga qaytish", callback_data="roles_list")],
+            [InlineKeyboardButton(text="💬 Batafsil so'rash uchun", url="https://t.me/skroozy")]
+        ]
+    )
+
+def get_admin_manage_inline() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(
+                text="➕ Admin Qo'shish",
+                callback_data="admin_add_start"
+            )],
+            [InlineKeyboardButton(
+                text="📜 Adminlar Ro'yxati / Olish",
+                callback_data="admin_list_show"
+            )],
+            [InlineKeyboardButton(
+            [InlineKeyboardButton(
+                text="👤 Adminlar Haqida Ma'lumot",
+                callback_data="admin_info_list"
+            )],
+                text="🏠 Asosiy menyu",
+                callback_data="main_menu"
+            )]
+        ]
+    )
+
+def get_admins_delete_inline(admins_data) -> InlineKeyboardMarkup:
+    buttons = []
+    for uid, name, username in admins_data:
+        display_name = name if name else f"ID: {uid}"
+        buttons.append([
+            InlineKeyboardButton(text=f"❌ {display_name} ({uid})", callback_data=f"admin_del_{uid}")
+        ])
+    
+    buttons.append([InlineKeyboardButton(text="🔙 Orqaga", callback_data="admin_menu_back")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_back_inline() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="back_main")]
+        ]
+    )

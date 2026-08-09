@@ -1,0 +1,4 @@
+TOKEN = "8809849615:AAEjZ9Mooq8mlZ9uUihSXgxFgV9KcJEfGsU"
+OWNER_ID = 7089836188
+DB_NAME = "ads_database.db"
+

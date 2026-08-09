@@ -1,0 +1,364 @@
+from aiogram import Router, F, types
+from aiogram.filters import Command
+
+from database import (
+    log_group_message,
+    get_top_daily_active,
+    get_top_monthly_active,
+    get_group_admin_activity
+)
+
+router = Router()
+
+
+# ============================================================
+# 📊 GURUHDAGI /AKTIV
+# ============================================================
+
+@router.message(
+    Command("aktiv"),
+    F.chat.type.in_({"group", "supergroup"})
+)
+async def show_group_activity(message: types.Message):
+
+    # /aktiv yozgan odamning xabarini ham hisoblaymiz
+    if message.from_user and not message.from_user.is_bot:
+        log_group_message(
+            user_id=message.from_user.id,
+            group_id=message.chat.id,
+            full_name=message.from_user.full_name,
+            username=message.from_user.username or ""
+        )
+
+    daily = get_top_daily_active(
+        group_id=message.chat.id,
+        limit=5
+    )
+
+    monthly = get_top_monthly_active(
+        group_id=message.chat.id,
+        limit=5
+    )
+
+    text = "<b>🏆 GURUH FAOLLIGI</b>\n\n"
+
+    # -------------------------
+    # BUGUNGI TOP 5
+    # -------------------------
+
+    text += "<b>📅 Bugungi TOP 5:</b>\n"
+
+    if daily:
+        for i, row in enumerate(daily, 1):
+            user_id, full_name, username, count = row
+
+            name = (
+                f"@{username}"
+                if username
+                else full_name
+            )
+
+            medal = (
+                "🥇" if i == 1
+                else "🥈" if i == 2
+                else "🥉" if i == 3
+                else f"{i}."
+            )
+
+            text += (
+                f"{medal} <b>{name}</b> — "
+                f"{count} ta xabar\n"
+            )
+    else:
+        text += "Hali aktivlik yo'q.\n"
+
+    text += "\n"
+
+    # -------------------------
+    # OYLIK TOP 5
+    # -------------------------
+
+    text += "<b>📆 Oylik TOP 5:</b>\n"
+
+    if monthly:
+        for i, row in enumerate(monthly, 1):
+            user_id, full_name, username, count = row
+
+            name = (
+                f"@{username}"
+                if username
+                else full_name
+            )
+
+            medal = (
+                "🥇" if i == 1
+                else "🥈" if i == 2
+                else "🥉" if i == 3
+                else f"{i}."
+            )
+
+            text += (
+                f"{medal} <b>{name}</b> — "
+                f"{count} ta xabar\n"
+            )
+    else:
+        text += "Hali oylik aktivlik yo'q.\n"
+
+    keyboard = types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text="👑 Adminlar aktivligi",
+                    callback_data="group_admin_activity"
+                )
+            ],
+            [
+                types.InlineKeyboardButton(
+                    text="🔄 Yangilash",
+                    callback_data="group_activity_refresh"
+                )
+            ]
+        ]
+    )
+
+    await message.reply(
+        text,
+        reply_markup=keyboard,
+        parse_mode="HTML"
+    )
+
+
+# ============================================================
+# 👑 GURUHDAGI ADMINLAR AKTIVLIGI
+# ============================================================
+
+@router.callback_query(
+    F.data == "group_admin_activity",
+    F.message.chat.type.in_({"group", "supergroup"})
+)
+async def show_group_admin_activity(
+    callback: types.CallbackQuery
+):
+
+    chat_id = callback.message.chat.id
+
+    admins = await callback.bot.get_chat_administrators(chat_id)
+
+    admin_ids = [
+        admin.user.id
+        for admin in admins
+        if not admin.user.is_bot
+    ]
+
+    daily = get_group_admin_activity(
+        chat_id,
+        admin_ids,
+        monthly=False
+    )
+
+    monthly = get_group_admin_activity(
+        chat_id,
+        admin_ids,
+        monthly=True
+    )
+
+    text = "<b>👑 GURUH ADMINLARI FAOLLIGI</b>\n\n"
+
+    # -------------------------
+    # BUGUN
+    # -------------------------
+
+    text += "<b>📅 Bugungi aktivlik:</b>\n"
+
+    if daily:
+        for i, row in enumerate(daily, 1):
+            user_id, full_name, username, count = row
+
+            name = (
+                f"@{username}"
+                if username
+                else full_name
+            )
+
+            text += (
+                f"{i}. <b>{name}</b> — "
+                f"{count} ta xabar\n"
+            )
+    else:
+        text += "Bugun adminlarda aktivlik yo'q.\n"
+
+    text += "\n"
+
+    # -------------------------
+    # OYLIK
+    # -------------------------
+
+    text += "<b>📆 Oylik aktivlik:</b>\n"
+
+    if monthly:
+        for i, row in enumerate(monthly, 1):
+            user_id, full_name, username, count = row
+
+            name = (
+                f"@{username}"
+                if username
+                else full_name
+            )
+
+            text += (
+                f"{i}. <b>{name}</b> — "
+                f"{count} ta xabar\n"
+            )
+    else:
+        text += "Bu oy adminlarda aktivlik yo'q.\n"
+
+    keyboard = types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text="⬅️ Aktivlikka qaytish",
+                    callback_data="group_activity_refresh"
+                )
+            ]
+        ]
+    )
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=keyboard,
+        parse_mode="HTML"
+    )
+
+    await callback.answer()
+
+
+# ============================================================
+# 🔄 AKTIVLIKNI YANGILASH
+# ============================================================
+
+@router.callback_query(
+    F.data == "group_activity_refresh",
+    F.message.chat.type.in_({"group", "supergroup"})
+)
+async def refresh_group_activity(
+    callback: types.CallbackQuery
+):
+
+    # Tugmani bosgan odamning xabarini hisobga olamiz
+    if callback.from_user and not callback.from_user.is_bot:
+        log_group_message(
+            user_id=callback.from_user.id,
+            group_id=callback.message.chat.id,
+            full_name=callback.from_user.full_name,
+            username=callback.from_user.username or ""
+        )
+
+    daily = get_top_daily_active(
+        group_id=callback.message.chat.id,
+        limit=5
+    )
+
+    monthly = get_top_monthly_active(
+        group_id=callback.message.chat.id,
+        limit=5
+    )
+
+    text = "<b>🏆 GURUH FAOLLIGI</b>\n\n"
+
+    text += "<b>📅 Bugungi TOP 5:</b>\n"
+
+    if daily:
+        for i, row in enumerate(daily, 1):
+            user_id, full_name, username, count = row
+
+            name = (
+                f"@{username}"
+                if username
+                else full_name
+            )
+
+            medal = (
+                "🥇" if i == 1
+                else "🥈" if i == 2
+                else "🥉" if i == 3
+                else f"{i}."
+            )
+
+            text += (
+                f"{medal} <b>{name}</b> — "
+                f"{count} ta xabar\n"
+            )
+    else:
+        text += "Hali aktivlik yo'q.\n"
+
+    text += "\n<b>📆 Oylik TOP 5:</b>\n"
+
+    if monthly:
+        for i, row in enumerate(monthly, 1):
+            user_id, full_name, username, count = row
+
+            name = (
+                f"@{username}"
+                if username
+                else full_name
+            )
+
+            medal = (
+                "🥇" if i == 1
+                else "🥈" if i == 2
+                else "🥉" if i == 3
+                else f"{i}."
+            )
+
+            text += (
+                f"{medal} <b>{name}</b> — "
+                f"{count} ta xabar\n"
+            )
+    else:
+        text += "Hali oylik aktivlik yo'q.\n"
+
+    keyboard = types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text="👑 Adminlar aktivligi",
+                    callback_data="group_admin_activity"
+                )
+            ],
+            [
+                types.InlineKeyboardButton(
+                    text="🔄 Yangilash",
+                    callback_data="group_activity_refresh"
+                )
+            ]
+        ]
+    )
+
+    await callback.message.edit_text(
+        text,
+        reply_markup=keyboard,
+        parse_mode="HTML"
+    )
+
+    await callback.answer()
+
+
+# ============================================================
+# 💬 GURUHDAGI HAR BIR XABARNI HISOBLASH
+# ============================================================
+
+@router.message(
+    F.chat.type.in_({"group", "supergroup"})
+)
+async def track_group_messages(
+    message: types.Message
+):
+
+    if message.from_user and not message.from_user.is_bot:
+
+        log_group_message(
+            user_id=message.from_user.id,
+            group_id=message.chat.id,
+            full_name=message.from_user.full_name,
+            username=message.from_user.username or ""
+        )
