@@ -1,7 +1,8 @@
 import sqlite3
 from datetime import datetime
 
-DB_NAME = "bot_database.db"
+from config import DB_NAME
+
 
 def upgrade_admins_table():
     conn = sqlite3.connect(DB_NAME)
@@ -45,8 +46,6 @@ def init_db():
         )
     """)
     
-    upgrade_admins_table()
-
     # 3. Shikoyatlar jadvali
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS complaints (
@@ -85,8 +84,44 @@ def init_db():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS connected_accounts (
+            owner_user_id INTEGER NOT NULL,
+            account_id INTEGER NOT NULL,
+            username TEXT NOT NULL DEFAULT '',
+            display_name TEXT NOT NULL DEFAULT '',
+            session_name TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (owner_user_id, account_id),
+            UNIQUE (session_name)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS account_texts (
+            owner_user_id INTEGER NOT NULL,
+            account_id INTEGER NOT NULL,
+            text_content TEXT NOT NULL,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (owner_user_id, account_id),
+            FOREIGN KEY (owner_user_id, account_id)
+                REFERENCES connected_accounts(owner_user_id, account_id)
+                ON DELETE CASCADE
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS account_api_credentials (
+            owner_user_id INTEGER PRIMARY KEY,
+            api_id INTEGER NOT NULL,
+            encrypted_api_hash TEXT NOT NULL,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
     conn.close()
+    upgrade_admins_table()
 
 
 
@@ -193,37 +228,6 @@ def get_all_ads_stat():
 
     conn.close()
     return total_count, total_groups
-
-
-def get_ad_groups(limit=10):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT group_name, group_link
-        FROM ads_history
-        GROUP BY group_name, group_link
-        ORDER BY MAX(rowid) DESC
-        LIMIT ?
-    """, (limit,))
-
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
-def get_top_ad_groups(limit=5):
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT group_name, group_link, COUNT(*) as cnt
-        FROM ads_history
-        GROUP BY group_name
-        ORDER BY cnt DESC
-        LIMIT ?
-    """, (limit,))
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
 
 
 # 📊 --- GURUH FAOLLIGI FUNKSIYALARI --- 📊
@@ -604,16 +608,8 @@ def get_top_active_by_role(limit=10):
     return rows
 
 
-# 🔄 --- ALIASLAR (ESKI IMPORTLAR XATOLIK BERMASLIGI UCHUN) ---
-add_group_message = log_group_message
-
-
 # 🔄 --- ALIASLAR (ESKI IMPORTLAR XATOLIK BERMASLIGI UCHUN) --- 🔄
 add_group_message = log_group_message
-
-
-# 🚀 Bazani avtomatik ishga tushirish
-init_db()
 
 # ============================================================
 
@@ -657,6 +653,127 @@ def get_ad_groups(limit=50):
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+
+# ============================================================
+# CONNECTED TELEGRAM ACCOUNTS
+# ============================================================
+
+def save_connected_account(
+    owner_user_id,
+    account_id,
+    username,
+    display_name,
+    session_name,
+):
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute("""
+            INSERT INTO connected_accounts (
+                owner_user_id, account_id, username, display_name, session_name
+            ) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(owner_user_id, account_id) DO UPDATE SET
+                username = excluded.username,
+                display_name = excluded.display_name,
+                session_name = excluded.session_name
+        """, (
+            int(owner_user_id),
+            int(account_id),
+            username or "",
+            display_name or "",
+            session_name,
+        ))
+
+
+def get_connected_accounts(owner_user_id):
+    with sqlite3.connect(DB_NAME) as conn:
+        return conn.execute("""
+            SELECT account_id, username, display_name, session_name
+            FROM connected_accounts
+            WHERE owner_user_id = ?
+            ORDER BY created_at, account_id
+        """, (int(owner_user_id),)).fetchall()
+
+
+def get_connected_account(owner_user_id, account_id):
+    with sqlite3.connect(DB_NAME) as conn:
+        return conn.execute("""
+            SELECT account_id, username, display_name, session_name
+            FROM connected_accounts
+            WHERE owner_user_id = ? AND account_id = ?
+        """, (int(owner_user_id), int(account_id))).fetchone()
+
+
+def save_account_api_credentials(owner_user_id, api_id, encrypted_api_hash):
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute("""
+            INSERT INTO account_api_credentials (
+                owner_user_id, api_id, encrypted_api_hash
+            ) VALUES (?, ?, ?)
+            ON CONFLICT(owner_user_id) DO UPDATE SET
+                api_id = excluded.api_id,
+                encrypted_api_hash = excluded.encrypted_api_hash,
+                updated_at = CURRENT_TIMESTAMP
+        """, (int(owner_user_id), int(api_id), encrypted_api_hash))
+
+
+def get_account_api_credentials(owner_user_id):
+    with sqlite3.connect(DB_NAME) as conn:
+        return conn.execute("""
+            SELECT api_id, encrypted_api_hash
+            FROM account_api_credentials
+            WHERE owner_user_id = ?
+        """, (int(owner_user_id),)).fetchone()
+
+
+def save_account_text(owner_user_id, account_id, text_content):
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.execute("""
+            INSERT INTO account_texts (owner_user_id, account_id, text_content)
+            VALUES (?, ?, ?)
+            ON CONFLICT(owner_user_id, account_id) DO UPDATE SET
+                text_content = excluded.text_content,
+                updated_at = CURRENT_TIMESTAMP
+        """, (int(owner_user_id), int(account_id), text_content))
+
+
+def get_account_text(owner_user_id, account_id):
+    with sqlite3.connect(DB_NAME) as conn:
+        row = conn.execute("""
+            SELECT text_content
+            FROM account_texts
+            WHERE owner_user_id = ? AND account_id = ?
+        """, (int(owner_user_id), int(account_id))).fetchone()
+    return row[0] if row else None
+
+
+def delete_account_text(owner_user_id, account_id):
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.execute("""
+            DELETE FROM account_texts
+            WHERE owner_user_id = ? AND account_id = ?
+        """, (int(owner_user_id), int(account_id)))
+        return cursor.rowcount > 0
+
+
+def get_account_ad_groups(limit=50):
+    """Return stable row IDs for the existing advertisement group history."""
+    with sqlite3.connect(DB_NAME) as conn:
+        return conn.execute("""
+            SELECT MAX(rowid), group_name, group_link, MAX(created_at)
+            FROM ads_history
+            GROUP BY group_name, group_link
+            ORDER BY MAX(created_at) DESC
+            LIMIT ?
+        """, (int(limit),)).fetchall()
+
+
+def get_account_ad_group(row_id):
+    with sqlite3.connect(DB_NAME) as conn:
+        return conn.execute("""
+            SELECT group_name, group_link
+            FROM ads_history
+            WHERE rowid = ?
+        """, (int(row_id),)).fetchone()
 
 # ============================================================
 # 👤 ADMIN MA'LUMOTLARI UCHUN YANGI USTUNLAR

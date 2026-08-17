@@ -1,4 +1,10 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+)
+
 from config import OWNER_ID
 
 BTN_USER_1 = "📩 𝗥𝗲𝗸𝗹𝗮𝗺𝗮"
@@ -34,6 +40,12 @@ def get_main_menu(user_id: int, admins_list: list) -> InlineKeyboardMarkup:
 
     # 👤 Oddiy foydalanuvchi menyusi
     buttons = [
+        [
+            InlineKeyboardButton(
+                text="📱 Account ulash",
+                callback_data="acc:menu"
+            )
+        ],
         [
             InlineKeyboardButton(
                 text=BTN_USER_1,
@@ -175,7 +187,7 @@ def get_admins_delete_inline(admins_data) -> InlineKeyboardMarkup:
 def get_back_inline() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="back_main")]
+            [InlineKeyboardButton(text="⬅️ Orqaga", callback_data="main_menu")]
         ]
     )
 

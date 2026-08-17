@@ -1,13 +1,13 @@
 from html import escape
 
-from aiogram import Router, F, types
+from aiogram import F, Router, types
 from aiogram.filters import Command
 
 from database import (
-    log_group_message,
+    get_group_admin_activity,
     get_top_daily_active,
     get_top_monthly_active,
-    get_group_admin_activity
+    log_group_message,
 )
 
 router = Router()

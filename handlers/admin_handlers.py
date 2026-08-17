@@ -1,20 +1,16 @@
 import asyncio
-from aiogram import Router, F, types
+
+from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from config import OWNER_ID
 from database import (
-    get_all_users,
     get_all_admins,
     get_all_ads_stat,
-    get_today_ads,
-    get_top_ad_groups
+    get_all_users,
 )
-
-# 👑 BOT EGASI ID-SI
-OWNER_ID = 7089836188
 
 router = Router()
 

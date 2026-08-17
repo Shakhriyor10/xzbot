@@ -1,43 +1,67 @@
-import asyncio
+import re
+from datetime import datetime
+from html import escape
+from urllib.parse import urlparse
 
-from aiogram import Router, F, types
-from aiogram.filters import Command, CommandStart
+from aiogram import F, Router, types
+from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
+from config import DB_NAME, OWNER_ID
 from database import (
-    save_user,
-    get_all_users,
     add_admin_to_db,
-    remove_admin_from_db,
-    get_all_admins,
-    get_admins_with_names,
-    save_admin_complaint,
-    save_ad_submission,
-    get_today_ads,
-    get_all_ads_stat,
-    get_top_ad_groups,
     get_ad_groups,
-    log_group_message,
-    get_top_daily_active,
-    get_top_weekly_active
+    get_admins_with_names,
+    get_all_admins,
+    get_today_ads,
+    get_top_ad_groups,
+    remove_admin_from_db,
+    save_ad_submission,
+    save_admin_complaint,
+    save_user,
 )
-
 from keyboards import (
+    get_admin_country_keyboard,
+    get_admin_manage_inline,
+    get_admin_region_keyboard,
+    get_admins_delete_inline,
+    get_back_inline,
     get_main_menu,
     get_roles_inline_keyboard,
-    get_back_inline,
-    get_admin_manage_inline,
-    get_admins_delete_inline,
-    get_admin_region_keyboard, get_admin_country_keyboard
 )
 
-
-# 👑 BOT EGASINING TELEGRAM ID-SI
-OWNER_ID = 7089836188
-
 router = Router()
+
+
+def parse_group_link(value: str) -> tuple[str | None, str] | None:
+    """Return a public chat reference (if available) and canonical Telegram URL."""
+    value = value.strip()
+
+    if value.startswith("@"):
+        username = value[1:].split("/", 1)[0]
+    else:
+        candidate = value
+        if candidate.lower().startswith(("t.me/", "www.t.me/")):
+            candidate = f"https://{candidate}"
+
+        parsed = urlparse(candidate)
+        if parsed.scheme.lower() not in {"http", "https"}:
+            return None
+        if parsed.netloc.lower() not in {"t.me", "www.t.me"}:
+            return None
+
+        path = parsed.path.strip("/")
+        if path.startswith("+") and len(path) > 1 and "/" not in path:
+            return None, f"https://t.me/{path}"
+
+        username = path.split("/", 1)[0]
+
+    if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", username):
+        return None
+
+    return f"@{username}", f"https://t.me/{username}"
 
 
 # ============================================================
@@ -197,7 +221,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     save_user(message.from_user)
 
     await message.answer(
-        f"<b>Salom, {message.from_user.full_name}!</b>\n\n"
+        f"<b>Salom, {escape(message.from_user.full_name)}!</b>\n\n"
         "<b>Asosiy menyudan kerakli bo'limni tanlang:</b>",
         reply_markup=main_menu(message.from_user.id),
         parse_mode="HTML"
@@ -216,7 +240,7 @@ async def main_menu_callback(
     await state.clear()
 
     await callback.message.edit_text(
-        f"<b>Salom, {callback.from_user.full_name}!</b>\n\n"
+        f"<b>Salom, {escape(callback.from_user.full_name)}!</b>\n\n"
         "<b>Asosiy menyudan kerakli bo'limni tanlang:</b>",
         reply_markup=main_menu(callback.from_user.id),
         parse_mode="HTML"
@@ -345,27 +369,27 @@ async def process_group_link(
         )
         return
 
-    group_link = message.text.strip()
+    parsed_link = parse_group_link(message.text)
+    if parsed_link is None:
+        await message.answer(
+            "❌ Guruh havolasi noto‘g‘ri.\n\n"
+            "Masalan: <code>@mygroup</code> yoki "
+            "<code>https://t.me/mygroup/</code>",
+            reply_markup=cancel_keyboard(),
+            parse_mode="HTML",
+        )
+        return
 
-    # Linkdan guruh username/ID ni aniqlash
-    chat_ref = group_link
+    chat_ref, group_link = parsed_link
 
-    if group_link.startswith("https://t.me/"):
-        chat_ref = "@" + group_link.split("https://t.me/", 1)[1].split("/", 1)[0].split("?", 1)[0]
-    elif group_link.startswith("http://t.me/"):
-        chat_ref = "@" + group_link.split("http://t.me/", 1)[1].split("/", 1)[0].split("?", 1)[0]
-    elif group_link.startswith("t.me/"):
-        chat_ref = "@" + group_link.split("t.me/", 1)[1].split("/", 1)[0].split("?", 1)[0]
-    elif group_link.startswith("@"):
-        chat_ref = group_link.split("/", 1)[0]
+    group_name = "Yopiq guruh" if chat_ref is None else None
 
-    group_name = None
-
-    try:
-        chat = await message.bot.get_chat(chat_ref)
-        group_name = chat.title
-    except Exception as e:
-        print(f"⚠️ Guruh nomini aniqlab bo‘lmadi: {e}")
+    if chat_ref is not None:
+        try:
+            chat = await message.bot.get_chat(chat_ref)
+            group_name = chat.title
+        except Exception as e:
+            print(f"⚠️ Guruh nomini aniqlab bo‘lmadi: {e}")
 
     if not group_name:
         await message.answer(
@@ -417,24 +441,16 @@ async def process_screenshot(
     group_link = (user_data.get("group_link") or "").strip()
 
     # Guruh nomini link orqali aniqlash
-    group_name = "Aniqlanmadi"
+    group_name = user_data.get("group_name") or "Aniqlanmadi"
 
     try:
-        username = None
+        parsed_link = parse_group_link(group_link)
 
-        if group_link.startswith("https://t.me/"):
-            username = group_link.split("https://t.me/", 1)[1].split("/", 1)[0]
-        elif group_link.startswith("http://t.me/"):
-            username = group_link.split("http://t.me/", 1)[1].split("/", 1)[0]
-        elif group_link.startswith("t.me/"):
-            username = group_link.split("t.me/", 1)[1].split("/", 1)[0]
-        elif group_link.startswith("@"):
-            username = group_link[1:].split("/", 1)[0]
-
-        if username:
-            chat = await message.bot.get_chat(f"@{username}")
-            group_name = chat.title or chat.full_name or username
-        else:
+        if parsed_link and parsed_link[0] is not None:
+            chat_ref, _canonical_url = parsed_link
+            chat = await message.bot.get_chat(chat_ref)
+            group_name = chat.title or chat.full_name or chat_ref.removeprefix("@")
+        elif not parsed_link:
             group_name = "Link noto‘g‘ri"
 
     except Exception as e:
@@ -520,7 +536,7 @@ async def start_complaint_callback(
 
     keyboard = []
 
-    for admin_id, full_name, username in sub_admins:
+    for admin_id, full_name, username, _region, _birth_date, _phone in sub_admins:
         display_name = full_name or f"Admin ({admin_id})"
 
         if username:
@@ -564,7 +580,7 @@ async def process_admin_selection(
 
     target_admin_name = f"ID: {target_admin_id}"
 
-    for aid, fname, uname in admins:
+    for aid, fname, uname, _region, _birth_date, _phone in admins:
         if aid == target_admin_id:
             target_admin_name = (
                 fname
@@ -795,7 +811,7 @@ async def process_add_admin_id(
             parse_mode="HTML"
         )
 
-    except Exception as e:
+    except Exception:
         await message.answer(
             "❌ Bu foydalanuvchiga xabar yuborib bo'lmadi.\n\n"
             "ℹ️ Avval u botga /start bosgan bo'lishi kerak.",
@@ -1552,7 +1568,7 @@ async def complaint_admin_selected(
 
     selected_admin = None
 
-    for aid, full_name, username in admins:
+    for aid, full_name, username, _region, _birth_date, _phone in admins:
         if aid == admin_id:
             selected_admin = (
                 full_name or f"Admin {aid}"
@@ -1674,25 +1690,6 @@ async def process_complaint_text_inline(
         parse_mode="HTML"
     )
 
-
-# ============================================================
-# ❌ SHIKOYATNI BEKOR QILISH
-# ============================================================
-
-@router.callback_query(F.data == "cancel_fsm")
-async def cancel_fsm_callback(
-    callback: types.CallbackQuery,
-    state: FSMContext
-):
-    await state.clear()
-
-    await callback.message.edit_text(
-        "<b>Asosiy menyuga qaytdingiz.</b>",
-        reply_markup=main_menu(callback.from_user.id),
-        parse_mode="HTML"
-    )
-
-    await callback.answer()
 
 @router.callback_query(F.data == "admin_menu_back")
 async def admin_menu_back_callback(
@@ -1864,9 +1861,10 @@ async def process_admin_birth_date(
 
     birth_date = message.text.strip()
 
-    import re
 
-    if not re.fullmatch(r"\d{2}\.\d{2}\.\d{4}", birth_date):
+    try:
+        datetime.strptime(birth_date, "%d.%m.%Y")
+    except ValueError:
         await message.answer(
             "❌ Sana formati noto‘g‘ri.\n\n"
             "📅 Masalan: <code>23.10.2008</code>",
@@ -1907,7 +1905,8 @@ async def process_admin_birth_date(
 async def finish_admin_registration(
     message: types.Message,
     state: FSMContext,
-    phone: str = ""
+    phone: str = "",
+    user: types.User | None = None,
 ):
     data = await state.get_data()
 
@@ -1916,7 +1915,8 @@ async def finish_admin_registration(
     region = data.get("region", "")
     birth_date = data.get("birth_date", "")
 
-    username = message.from_user.username or ""
+    user = user or message.from_user
+    username = user.username or ""
 
     # Admin ma'lumotlarini bazaga saqlash
     add_admin_to_db(
@@ -1964,7 +1964,7 @@ async def finish_admin_registration(
         "✅ <b>Admin muvaffaqiyatli qo'shildi!</b>\n\n"
         f"👤 {full_name or '—'}\n"
         f"📍 {region or '—'}",
-        reply_markup=main_menu(message.from_user.id),
+        reply_markup=main_menu(user.id),
         parse_mode="HTML"
     )
 
@@ -1974,16 +1974,15 @@ async def admin_phone_skip(
     callback: types.CallbackQuery,
     state: FSMContext
 ):
-    if callback.from_user.id != OWNER_ID:
+    data = await state.get_data()
+    admin_id = data.get("admin_id")
+
+    if callback.from_user.id != admin_id:
         await callback.answer(
             "⛔️ Ruxsat yo'q!",
             show_alert=True
         )
         return
-
-    data = await state.get_data()
-
-    admin_id = data.get("admin_id")
 
     if not admin_id:
         await callback.answer(
@@ -1996,7 +1995,8 @@ async def admin_phone_skip(
     await finish_admin_registration(
         callback.message,
         state,
-        phone=""
+        phone="",
+        user=callback.from_user,
     )
 
     await callback.answer()
@@ -2050,7 +2050,7 @@ async def cb_admin_info(callback: types.CallbackQuery):
 
     import sqlite3
 
-    conn = sqlite3.connect("bot_database.db")
+    conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
     cursor.execute("""
