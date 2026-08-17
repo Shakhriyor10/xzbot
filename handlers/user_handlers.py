@@ -9,7 +9,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from config import DB_NAME, OWNER_ID
+from config import DB_NAME, OWNER_ID, OWNER_IDS
 from database import (
     add_admin_to_db,
     get_ad_groups,
@@ -30,6 +30,13 @@ from keyboards import (
     get_back_inline,
     get_main_menu,
     get_roles_inline_keyboard,
+    get_bot_about_inline,
+    get_about_back_inline,
+    BOT_ABOUT_TEXT,
+    REKLAMA_INFO,
+    ADMINS_INFO,
+    ACTIVE_INFO,
+    GROUP_HELP_INFO,
 )
 
 router = Router()
@@ -183,9 +190,12 @@ def cancel_keyboard():
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="⬅️ Orqaga",
+                    text="Orqaga",
                     callback_data="cancel_fsm"
-                )
+                ,
+    icon_custom_emoji_id="5258084656674250503",
+    style="primary"
+)
             ]
         ]
     )
@@ -196,15 +206,21 @@ def roles_back_keyboard():
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🔙 Rollarga qaytish",
+                    text="Rollarga qaytish",
                     callback_data="roles_list"
-                )
+                ,
+    icon_custom_emoji_id="5258328383183396223",
+    style="primary"
+)
             ],
             [
                 InlineKeyboardButton(
-                    text="⬅️ Asosiy menyu",
+                    text="Asosiy menyu",
                     callback_data="main_menu"
-                )
+                ,
+    icon_custom_emoji_id="5217893344855757782",
+    style="primary"
+)
             ]
         ]
     )
@@ -214,14 +230,44 @@ def roles_back_keyboard():
 # 1. /START
 # ============================================================
 
+# Premium (custom) emoji IDs used in the /start greeting.
+# NOTE: Telegram only shows the real custom emoji graphic if the bot
+# owner's account has an active Telegram Premium subscription (this has
+# been true for all bots since Bot API 9.4, Feb 2026). Otherwise — or on
+# clients that don't support custom emoji — users just see the fallback
+# character passed as the tag's inner text.
+GREETING_EMOJI_IDS = [
+    "5346314623647763399",
+    "5343869305492624239",
+    "5343681593946951413",
+    "5346304208352069971",
+    "5345787682700152100",
+]
+NAME_EMOJI_ID = "6082532989537881216"
+
+
+def _tg_emoji(emoji_id: str, fallback: str = "⭐") -> str:
+    """Build a <tg-emoji> HTML tag for a premium/custom emoji.
+
+    `fallback` is what's displayed when the custom emoji can't be
+    rendered. Swap it for the emoji that actually matches each
+    custom_emoji_id (the "emoji" field from get_custom_emoji_stickers)
+    if you want the fallback to look right.
+    """
+    return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
+
+
 @router.message(CommandStart(), F.chat.type == "private")
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
 
     save_user(message.from_user)
 
+    greeting_emojis = "".join(_tg_emoji(eid) for eid in GREETING_EMOJI_IDS)
+    name_emoji = _tg_emoji(NAME_EMOJI_ID)
+
     await message.answer(
-        f"<b>Salom, {escape(message.from_user.full_name)}!</b>\n\n"
+        f"{greeting_emojis} <b>{escape(message.from_user.full_name)}!</b> {name_emoji}\n\n"
         "<b>Asosiy menyudan kerakli bo'limni tanlang:</b>",
         reply_markup=main_menu(message.from_user.id),
         parse_mode="HTML"
@@ -240,12 +286,50 @@ async def main_menu_callback(
     await state.clear()
 
     await callback.message.edit_text(
-        f"<b>Salom, {escape(callback.from_user.full_name)}!</b>\n\n"
+        f"<b>{escape(callback.from_user.full_name)}!</b>\n\n"
         "<b>Asosiy menyudan kerakli bo'limni tanlang:</b>",
         reply_markup=main_menu(callback.from_user.id),
         parse_mode="HTML"
     )
 
+    await callback.answer()
+
+
+# ============================================================
+# BOT HAQIDA
+# ============================================================
+
+@router.callback_query(F.data == "bot_about")
+async def bot_about_callback(callback: types.CallbackQuery):
+    await callback.message.edit_text(
+        BOT_ABOUT_TEXT,
+        reply_markup=get_bot_about_inline(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "about_reklama")
+async def about_ads_callback(callback: types.CallbackQuery):
+    await callback.message.edit_text(REKLAMA_INFO, reply_markup=get_about_back_inline(), parse_mode="HTML")
+    await callback.answer()
+
+
+@router.callback_query(F.data == "about_admins")
+async def about_admins_callback(callback: types.CallbackQuery):
+    await callback.message.edit_text(ADMINS_INFO, reply_markup=get_about_back_inline(), parse_mode="HTML")
+    await callback.answer()
+
+
+@router.callback_query(F.data == "about_active")
+async def about_active_callback(callback: types.CallbackQuery):
+    await callback.message.edit_text(ACTIVE_INFO, reply_markup=get_about_back_inline(), parse_mode="HTML")
+    await callback.answer()
+
+
+@router.callback_query(F.data == "about_group_help")
+async def about_group_help_callback(callback: types.CallbackQuery):
+    await callback.message.edit_text(GROUP_HELP_INFO, reply_markup=get_about_back_inline(), parse_mode="HTML")
     await callback.answer()
 
 
@@ -524,7 +608,7 @@ async def start_complaint_callback(
 
     sub_admins = [
         adm for adm in admins
-        if adm[0] != OWNER_ID
+        if adm[0] not in OWNER_IDS
     ]
 
     if not sub_admins:
@@ -544,14 +628,19 @@ async def start_complaint_callback(
 
         keyboard.append([
             InlineKeyboardButton(
-                text=f"👤 {display_name}",
+                text=f"{display_name}",
                 callback_data=f"select_admin_{admin_id}"
-            )
+            ,
+    icon_custom_emoji_id="5217763885951520694",
+    style="primary"
+)
         ])
 
     keyboard.append([
         InlineKeyboardButton(
-            text="⬅️ Orqaga",
+            text="Orqaga",
+            icon_custom_emoji_id="5877536313623711363",
+            style="primary",
             callback_data="main_menu"
         )
     ])
@@ -707,7 +796,7 @@ async def process_complaint_text(
 async def admin_management_menu_callback(
     callback: types.CallbackQuery
 ):
-    if callback.from_user.id != OWNER_ID:
+    if callback.from_user.id not in OWNER_IDS:
         await callback.answer(
             "⛔️ Bu bo'lim faqat Owner uchun!",
             show_alert=True
@@ -734,7 +823,7 @@ async def cb_admin_add_start(
     callback: types.CallbackQuery,
     state: FSMContext
 ):
-    if callback.from_user.id != OWNER_ID:
+    if callback.from_user.id not in OWNER_IDS:
         await callback.answer(
             "⛔️ Ruxsat yo'q!",
             show_alert=True
@@ -761,7 +850,7 @@ async def process_add_admin_id(
     message: types.Message,
     state: FSMContext
 ):
-    if message.from_user.id != OWNER_ID:
+    if message.from_user.id not in OWNER_IDS:
         return
 
     if not message.text or not message.text.isdigit():
@@ -774,7 +863,7 @@ async def process_add_admin_id(
 
     new_admin_id = int(message.text)
 
-    if new_admin_id == OWNER_ID:
+    if new_admin_id in OWNER_IDS:
         await message.answer(
             "❌ Ownerni qaytadan admin qilish shart emas.",
             reply_markup=cancel_keyboard()
@@ -787,9 +876,12 @@ async def process_add_admin_id(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="📝 Ro'yxatdan o'tish",
+                    text="Ro'yxatdan o'tish",
                     callback_data=f"admin_register_{new_admin_id}"
-                )
+                ,
+    icon_custom_emoji_id="5220130546075599896",
+    style="primary"
+)
             ]
         ]
     )
@@ -858,7 +950,7 @@ async def admin_register_start(
 async def cb_admin_info_list(
     callback: types.CallbackQuery
 ):
-    if callback.from_user.id != OWNER_ID:
+    if callback.from_user.id not in OWNER_IDS:
         await callback.answer(
             "⛔️ Ruxsat faqat Owner uchun!",
             show_alert=True
@@ -884,16 +976,22 @@ async def cb_admin_info_list(
 
         keyboard.append([
             InlineKeyboardButton(
-                text=f"👤 {display_name}",
+                text=f"{display_name}",
                 callback_data=f"admin_info_{admin_id}"
-            )
+            ,
+    icon_custom_emoji_id="5217758006141291422",
+    style="primary"
+)
         ])
 
     keyboard.append([
         InlineKeyboardButton(
-            text="⬅️ Orqaga",
+            text="Orqaga",
             callback_data="menu_admin_manage"
-        )
+        ,
+    icon_custom_emoji_id="5440734549027871005",
+    style="primary"
+)
     ])
 
     await callback.message.edit_text(
@@ -910,7 +1008,7 @@ async def cb_admin_info_list(
 async def cb_admin_list_show(
     callback: types.CallbackQuery
 ):
-    if callback.from_user.id != OWNER_ID:
+    if callback.from_user.id not in OWNER_IDS:
         await callback.answer(
             "⛔️ Ruxsat yo'q!",
             show_alert=True
@@ -940,7 +1038,7 @@ async def cb_admin_list_show(
 async def cb_admin_remove_list(
     callback: types.CallbackQuery
 ):
-    if callback.from_user.id != OWNER_ID:
+    if callback.from_user.id not in OWNER_IDS:
         await callback.answer(
             "⛔️ Ruxsat yo'q!",
             show_alert=True
@@ -963,16 +1061,22 @@ async def cb_admin_remove_list(
 
         keyboard.append([
             InlineKeyboardButton(
-                text=f"🗑 {display_name}",
+                text=f"{display_name}",
                 callback_data=f"remove_admin_confirm_{admin_id}"
-            )
+            ,
+    icon_custom_emoji_id="5438564422312291236",
+    style="primary"
+)
         ])
 
     keyboard.append([
         InlineKeyboardButton(
-            text="⬅️ Orqaga",
+            text="Orqaga",
             callback_data="menu_admin_manage"
-        )
+        ,
+    icon_custom_emoji_id="5440734549027871005",
+    style="primary"
+)
     ])
 
     await callback.message.edit_text(
@@ -990,7 +1094,7 @@ async def cb_admin_remove_list(
 async def cb_remove_admin_confirm(
     callback: types.CallbackQuery
 ):
-    if callback.from_user.id != OWNER_ID:
+    if callback.from_user.id not in OWNER_IDS:
         await callback.answer(
             "⛔️ Ruxsat yo'q!",
             show_alert=True
@@ -1001,7 +1105,7 @@ async def cb_remove_admin_confirm(
         callback.data.split("_")[-1]
     )
 
-    if admin_id_to_remove == OWNER_ID:
+    if admin_id_to_remove in OWNER_IDS:
         await callback.answer(
             "⛔️ Ownerni o'chirib bo'lmaydi!",
             show_alert=True
@@ -1022,7 +1126,7 @@ async def cb_remove_admin_confirm(
 async def cb_admin_delete_old(
     callback: types.CallbackQuery
 ):
-    if callback.from_user.id != OWNER_ID:
+    if callback.from_user.id not in OWNER_IDS:
         await callback.answer(
             "⛔️ Ruxsat yo'q!",
             show_alert=True
@@ -1033,7 +1137,7 @@ async def cb_admin_delete_old(
         callback.data.split("_")[-1]
     )
 
-    if admin_id == OWNER_ID:
+    if admin_id in OWNER_IDS:
         await callback.answer(
             "⛔️ Ownerni o'chirib bo'lmaydi!",
             show_alert=True
@@ -1154,21 +1258,29 @@ async def show_ad_groups_callback(
         if group_url:
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"👥 {name}",
+                    text=f"{name}",
                     url=group_url
-                )
+                ,
+    icon_custom_emoji_id="5442951430757435697",
+    style="primary"
+)
             ])
         else:
             buttons.append([
                 InlineKeyboardButton(
-                    text=f"👥 {name}",
+                    text=f"{name}",
                     callback_data="no_group_link"
-                )
+                ,
+    icon_custom_emoji_id="5440831228741708298",
+    style="primary"
+)
             ])
 
     buttons.append([
         InlineKeyboardButton(
-            text="⬅️ Orqaga",
+            text="Orqaga",
+            icon_custom_emoji_id="5877536313623711363",
+            style="primary",
             callback_data="main_menu"
         )
     ])
@@ -1245,12 +1357,17 @@ async def show_top_ad_statistics_callback(
                 InlineKeyboardButton(
                     text=f"{place} {name}",
                     url=group_link
-                )
+                ,
+    icon_custom_emoji_id="5438162795625474405",
+    style="primary"
+)
             ])
 
     buttons.append([
         InlineKeyboardButton(
-            text="⬅️ Orqaga",
+            text="Orqaga",
+            icon_custom_emoji_id="5877536313623711363",
+            style="primary",
             callback_data="main_menu"
         )
     ])
@@ -1290,25 +1407,36 @@ async def show_top_active_callback(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="📅 Bugungi TOP 5",
+                    text="Bugungi TOP 5",
                     callback_data="activity_daily"
-                )
+                ,
+    icon_custom_emoji_id="5440851788750149665",
+    style="primary"
+)
             ],
             [
                 InlineKeyboardButton(
-                    text="📆 Oylik TOP 5",
+                    text="Oylik TOP 5",
                     callback_data="activity_monthly"
-                )
+                ,
+    icon_custom_emoji_id="5438540301775952753",
+    style="primary"
+)
             ],
             [
                 InlineKeyboardButton(
-                    text="👑 Adminlar aktivligi",
+                    text="Adminlar aktivligi",
                     callback_data="activity_admins"
-                )
+                ,
+    icon_custom_emoji_id="5438353840065767534",
+    style="primary"
+)
             ],
             [
                 InlineKeyboardButton(
-                    text="⬅️ Orqaga",
+                    text="Orqaga",
+            icon_custom_emoji_id="5877536313623711363",
+            style="primary",
                     callback_data="main_menu"
                 )
             ]
@@ -1341,15 +1469,21 @@ async def show_activity_daily_callback(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="⬅️ Aktivlik menyusiga",
+                        text="Aktivlik menyusiga",
                         callback_data="menu_top_active"
-                    )
+                    ,
+    icon_custom_emoji_id="5440739780298036971",
+    style="primary"
+)
                 ],
                 [
                     InlineKeyboardButton(
-                        text="🏠 Asosiy menyu",
+                        text="Asosiy menyu",
                         callback_data="main_menu"
-                    )
+                    ,
+    icon_custom_emoji_id="5217893344855757782",
+    style="primary"
+)
                 ]
             ]
         ),
@@ -1375,15 +1509,21 @@ async def show_activity_monthly_callback(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="⬅️ Aktivlik menyusiga",
+                        text="Aktivlik menyusiga",
                         callback_data="menu_top_active"
-                    )
+                    ,
+    icon_custom_emoji_id="5440739780298036971",
+    style="primary"
+)
                 ],
                 [
                     InlineKeyboardButton(
-                        text="🏠 Asosiy menyu",
+                        text="Asosiy menyu",
                         callback_data="main_menu"
-                    )
+                    ,
+    icon_custom_emoji_id="5217893344855757782",
+    style="primary"
+)
                 ]
             ]
         ),
@@ -1409,15 +1549,21 @@ async def show_activity_admins_callback(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="⬅️ Aktivlik menyusiga",
+                        text="Aktivlik menyusiga",
                         callback_data="menu_top_active"
-                    )
+                    ,
+    icon_custom_emoji_id="5440739780298036971",
+    style="primary"
+)
                 ],
                 [
                     InlineKeyboardButton(
-                        text="🏠 Asosiy menyu",
+                        text="Asosiy menyu",
                         callback_data="main_menu"
-                    )
+                    ,
+    icon_custom_emoji_id="5217893344855757782",
+    style="primary"
+)
                 ]
             ]
         ),
@@ -1497,7 +1643,7 @@ async def complaint_menu_callback(
     # Owner ko'rinmaydi
     admins = [
         admin for admin in admins
-        if admin[0] != OWNER_ID
+        if admin[0] not in OWNER_IDS
     ]
 
     if not admins:
@@ -1517,16 +1663,22 @@ async def complaint_menu_callback(
 
         buttons.append([
             InlineKeyboardButton(
-                text=f"👤 {name}",
+                text=f"{name}",
                 callback_data=f"complaint_admin_{admin_id}"
-            )
+            ,
+    icon_custom_emoji_id="5440785268296671580",
+    style="primary"
+)
         ])
 
     buttons.append([
         InlineKeyboardButton(
-            text="⬅️ Asosiy menyu",
+            text="Asosiy menyu",
             callback_data="main_menu"
-        )
+        ,
+    icon_custom_emoji_id="5217893344855757782",
+    style="primary"
+)
     ])
 
     await callback.message.edit_text(
@@ -1557,7 +1709,7 @@ async def complaint_admin_selected(
     )
 
     # Ownerni tanlashga yo'l qo'ymaymiz
-    if admin_id == OWNER_ID:
+    if admin_id in OWNER_IDS:
         await callback.answer(
             "⛔️ Ownerga shikoyat yuborib bo'lmaydi.",
             show_alert=True
@@ -1695,7 +1847,7 @@ async def process_complaint_text_inline(
 async def admin_menu_back_callback(
     callback: types.CallbackQuery
 ):
-    if callback.from_user.id != OWNER_ID:
+    if callback.from_user.id not in OWNER_IDS:
         await callback.answer(
             "⛔️ Ruxsat yo'q!",
             show_alert=True
@@ -1880,15 +2032,21 @@ async def process_admin_birth_date(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="⏭ Skip",
+                    text="Skip",
                     callback_data="admin_phone_skip"
-                )
+                ,
+    icon_custom_emoji_id="5438353840065767534",
+    style="primary"
+)
             ],
             [
                 InlineKeyboardButton(
-                    text="⬅️ Orqaga",
+                    text="Orqaga",
                     callback_data="admin_phone_back"
-                )
+                ,
+    icon_custom_emoji_id="5440735356481724855",
+    style="primary"
+)
             ]
         ]
     )
@@ -2032,7 +2190,7 @@ async def process_admin_phone(
 
 @router.callback_query(F.data.startswith("admin_info_"))
 async def cb_admin_info(callback: types.CallbackQuery):
-    if callback.from_user.id != OWNER_ID:
+    if callback.from_user.id not in OWNER_IDS:
         await callback.answer(
             "⛔️ Ruxsat faqat Owner uchun!",
             show_alert=True
@@ -2091,15 +2249,21 @@ async def cb_admin_info(callback: types.CallbackQuery):
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="⬅️ Adminlar ro'yxati",
+                    text="Adminlar ro'yxati",
                     callback_data="admin_info_list"
-                )
+                ,
+    icon_custom_emoji_id="5438610236728437908",
+    style="primary"
+)
             ],
             [
                 InlineKeyboardButton(
-                    text="⚙️ Admin boshqaruvi",
+                    text="Admin boshqaruvi",
                     callback_data="menu_admin_manage"
-                )
+                ,
+    icon_custom_emoji_id="5440734549027871005",
+    style="primary"
+)
             ]
         ]
     )
@@ -2111,3 +2275,4 @@ async def cb_admin_info(callback: types.CallbackQuery):
     )
 
     await callback.answer()
+

@@ -108,7 +108,17 @@ def users_keyboard(flow: CollectionFlow, back_data: str) -> InlineKeyboardMarkup
 
 
 async def _safe_edit(callback: types.CallbackQuery, text: str, keyboard: InlineKeyboardMarkup):
-    await callback.message.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
+    try:
+        await callback.message.edit_text(
+            text,
+            reply_markup=keyboard,
+            parse_mode="HTML",
+        )
+    except Exception as exc:
+        # Telegram xabar allaqachon aynan shu holatda bo‘lsa,
+        # "message is not modified" xatosini e’tiborsiz qoldiramiz.
+        if "message is not modified" not in str(exc).lower():
+            raise
 
 
 @router.callback_query(F.data == "acc:menu")
@@ -122,23 +132,15 @@ async def account_menu(callback: types.CallbackQuery, state: FSMContext):
         else "<b>📱 Account ulanmagan</b>\n\nAccount ulashni boshlang."
     )
     await _safe_edit(callback, text, account_menu_keyboard(callback.from_user.id))
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data == "acc:add")
 async def add_account(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
-    if not account_manager.configured_for(callback.from_user.id):
-        await state.set_state(AddAccountState.waiting_for_api_id)
-        await _safe_edit(
-            callback,
-            "<b>🔑 Telegram API sozlamasi</b>\n\n"
-            "<code>my.telegram.org/apps</code> sahifasidagi raqamli "
-            "<b>App api_id</b> qiymatini yuboring.",
-            InlineKeyboardMarkup(inline_keyboard=[_back("acc:menu")]),
-        )
-        await callback.answer()
-        return
     await state.set_state(AddAccountState.waiting_for_phone)
     await _safe_edit(
         callback,
@@ -147,7 +149,10 @@ async def add_account(callback: types.CallbackQuery, state: FSMContext):
         "Masalan: <code>+998901234567</code>",
         InlineKeyboardMarkup(inline_keyboard=[_back("acc:menu")]),
     )
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
     await callback.message.answer(
         "📞 Telefon raqamingiz:",
         reply_markup=ReplyKeyboardMarkup(
@@ -330,7 +335,10 @@ async def open_account(callback: types.CallbackQuery):
         f"<b>📱 {escape(_account_label(row))}</b>",
         account_actions_keyboard(account_id),
     )
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data.startswith("acc:text:"))
@@ -338,7 +346,10 @@ async def text_menu(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     account_id = int(callback.data.rsplit(":", 1)[1])
     await _safe_edit(callback, "<b>📝 Text Joylash</b>", text_menu_keyboard(account_id))
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data.startswith("acc:textadd:"))
@@ -352,7 +363,10 @@ async def text_add(callback: types.CallbackQuery, state: FSMContext):
         "textli xabarni yuboring. Oddiy xabar qabul qilinmaydi.",
         InlineKeyboardMarkup(inline_keyboard=[_back(f"acc:text:{account_id}")]),
     )
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
 
 
 @router.message(AddAccountState.waiting_for_forward, F.chat.type == "private")
@@ -381,7 +395,10 @@ async def text_show(callback: types.CallbackQuery):
     text = get_account_text(callback.from_user.id, account_id)
     body = escape(text[:3500]) if text else "Text saqlanmagan."
     await _safe_edit(callback, f"<b>👁 Saqlangan text</b>\n\n{body}", text_menu_keyboard(account_id))
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data.startswith("acc:textdel:"))
@@ -393,7 +410,10 @@ async def text_delete(callback: types.CallbackQuery):
         "✅ Text o‘chirildi." if deleted else "ℹ️ O‘chirish uchun text yo‘q.",
         text_menu_keyboard(account_id),
     )
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data.startswith("acc:groups:"))
@@ -406,7 +426,10 @@ async def groups(callback: types.CallbackQuery):
     rows.append(_back(f"acc:open:{account_id}"))
     text = "<b>📨 Kelgan reklamalar</b>\n\nGuruhni tanlang:" if len(rows) > 1 else "<b>📨 Hali reklama guruhlari yo‘q.</b>"
     await _safe_edit(callback, text, InlineKeyboardMarkup(inline_keyboard=rows))
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
 
 
 async def _join_selected(owner_id: int, account_id: int, row_id: int):
@@ -438,7 +461,10 @@ async def select_group(callback: types.CallbackQuery):
         return
     else:
         await _safe_edit(callback, f"<b>👥 {escape(name)}</b>", group_actions_keyboard(account_id, row_id))
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
 
 
 def _sender_choice(owner_id: int, listen_id: int, row_id: int, action: str):
@@ -566,7 +592,10 @@ async def _show_admins(callback, listen_id: int, row_id: int, send_id: int):
         f"<b>👑 {escape(name)} — admin userlar</b>",
         users_keyboard(flow, f"acc:grp:{listen_id}:{row_id}"),
     )
-    await callback.answer()
+    try:
+        await callback.answer()
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data.startswith("acc:admsend:"))
@@ -587,6 +616,8 @@ async def send_selected(callback: types.CallbackQuery):
         await callback.answer("☑️ Yuborildi" if selected.sent else "❌ Yuborilmadi")
         return
     text = get_account_text(callback.from_user.id, flow.send_account_id)
+    if not text:
+        text = get_account_text(callback.from_user.id, flow.listen_account_id)
     if not text:
         await callback.answer(
             "⚠️ Yuboruvchi account uchun avval 📝 Text Joylash orqali text qo‘shing.",

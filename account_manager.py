@@ -112,7 +112,7 @@ class AccountManager:
                         self.clients[(owner_user_id, account_id)] = client
                     else:
                         await client.disconnect()
-                except Exception:
+                except Exception as exc:
                     # A broken account must not prevent the bot from starting.
                     logger.exception(
                         "Connected account restore failed for owner=%s account=%s",
@@ -351,7 +351,7 @@ class AccountManager:
             client = await self.get_client(owner_user_id, flow.listen_account_id)
             if flow.handler is not None:
                 client.remove_event_handler(flow.handler)
-        except Exception:
+        except Exception as exc:
             logger.exception("Could not detach username collector for owner=%s", owner_user_id)
         return True
 
@@ -379,24 +379,29 @@ class AccountManager:
         flow = self.collections.get(int(owner_user_id))
         if not flow or int(target_user_id) not in flow.users:
             raise AccountError("❌ Username terish jarayoni yoki user topilmadi.")
+
         client = await self.get_client(owner_user_id, flow.send_account_id)
+
         try:
             await client.send_message(int(target_user_id), text)
             flow.users[int(target_user_id)].sent = True
             return True
+
         except FloodWaitError as exc:
             raise AccountError(
                 f"⏳ Telegram limiti: {exc.seconds} soniyadan keyin qayta urinib ko‘ring."
             ) from exc
-        except Exception:
-            logger.info(
+
+        except Exception as exc:
+            logger.exception(
                 "Selected message delivery failed for owner=%s target=%s",
                 owner_user_id,
                 target_user_id,
-                exc_info=True,
             )
             flow.users[int(target_user_id)].sent = False
-            return False
+            raise AccountError(
+                f"❌ Xabar yuborilmadi: {type(exc).__name__}: {exc}"
+            ) from exc
 
     async def shutdown(self):
         for owner_user_id in list(self.collections):

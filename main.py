@@ -28,7 +28,7 @@ async def main():
 
     print("Bot muvaffaqiyatli ishga tushdi...")
     try:
-        await dp.start_polling(bot)
+        await dp.start_polling(bot, drop_pending_updates=True)
     finally:
         await account_manager.shutdown()
         await bot.session.close()

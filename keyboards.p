@@ -50,6 +50,14 @@ def get_main_menu(user_id: int, admins_list: list) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(
+                text="𝗕𝗼𝘁 𝗛𝗮𝗾𝗶𝗱𝗮",
+                callback_data="bot_about",
+                icon_custom_emoji_id="5931415565955503486",
+                style="success"
+            )
+        ],
+        [
+            InlineKeyboardButton(
                 text=BTN_USER_1,
                 callback_data="menu_ad",
                 icon_custom_emoji_id="5440725903258704836",
@@ -68,14 +76,6 @@ def get_main_menu(user_id: int, admins_list: list) -> InlineKeyboardMarkup:
                 callback_data="menu_complaint",
                 icon_custom_emoji_id="5188463524568926712",
                 style="danger"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="ʙᴏᴛ xᴀǫɪᴅᴀ ᴍᴀʟᴜᴍᴏᴛ",
-                callback_data="bot_about",
-                icon_custom_emoji_id="5931415565955503486",
-                style="success"
             )
         ]
     ]
@@ -130,48 +130,54 @@ def get_main_menu(user_id: int, admins_list: list) -> InlineKeyboardMarkup:
         inline_keyboard=buttons
     )
 
+BOT_ABOUT_TEXT = (
+    '<tg-emoji emoji-id="5370935802844946281">⭐</tg-emoji> '
+    '<b>𝐌𝐚𝐟𝐢𝐚 𝐆𝐮𝐫𝐮𝐡𝐥𝐚𝐫 𝐔𝐜𝐡𝐮𝐧 𝐏𝐫𝐨 𝐝𝐚𝐫𝐚𝐣𝐚𝐝𝐚𝐠𝐢 𝐁𝐨𝐭</b>'
+)
 
-def get_bot_about_inline_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(
-                text="𝐑𝐞𝐤𝐥𝐚𝐦𝐚 𝐍𝐚𝐳𝐨𝐫𝐚𝐭𝐢",
-                callback_data="about_reklama",
-                icon_custom_emoji_id="5438194062987387842",
-                style="success"
-            )],
-            [InlineKeyboardButton(
-                text="𝐀𝐝𝐦𝐢𝐧𝐥𝐚𝐫 𝐍𝐚𝐳𝐨𝐫𝐚𝐭𝐢",
-                callback_data="about_admins",
-                icon_custom_emoji_id="5438194062987387842",
-                style="success"
-            )],
-            [InlineKeyboardButton(
-                text="𝐀𝐤𝐭𝐢𝐯 𝐍𝐚𝐳𝐨𝐫𝐚𝐭𝐢",
-                callback_data="about_active",
-                icon_custom_emoji_id="5438194062987387842",
-                style="success"
-            )],
-            [InlineKeyboardButton(
-                text="𝐆𝐫𝐨𝐮𝐩 𝐇𝐞𝐥𝐩 𝐌𝐚𝐟𝐢𝐚 𝐑𝐞𝐣𝐢𝐦 𝐁𝐨𝐭",
-                callback_data="about_group_help",
-                icon_custom_emoji_id="5438194062987387842",
-                style="success"
-            )],
-            [InlineKeyboardButton(
-                text="Бахром",
-                url="https://t.me/skroozy",
-                icon_custom_emoji_id="5438399744676225535",
-                style="danger"
-            )],
-            [InlineKeyboardButton(
-                text="Orqaga",
-                callback_data="main_menu",
-                icon_custom_emoji_id="5877536313623711363",
-                style="primary"
-            )]
-        ]
-    )
+REKLAMA_INFO = (
+    '<tg-emoji emoji-id="5438256705085400686">⭐</tg-emoji> '
+    '<b>𝐆𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐢𝐳𝐠𝐚 𝐑𝐞𝐤𝐥𝐚𝐦𝐚 𝐊𝐞𝐥𝐬𝐚 𝐔𝐥𝐚𝐫𝐧𝐢 𝐗𝐢𝐬𝐨𝐛𝐥𝐚𝐲𝐝𝐢 - 𝐯𝐚 𝐤𝐞𝐥𝐠𝐚𝐧 𝐫𝐞𝐤𝐥𝐚𝐦𝐚𝐠𝐚 𝐚𝐭𝐯𝐞𝐭 𝐪𝐢𝐥𝐚𝐝𝐢 - 𝐲𝐚𝐧𝐢 𝐚𝐯𝐭𝐨 𝐫𝐞𝐤 𝐬𝐳𝐠𝐚 𝐤𝐞𝐥𝐠𝐚𝐧 𝐦𝐚𝐟𝐢𝐚 𝐠𝐮𝐫𝐮𝐡𝐧𝐢 𝐚𝐝𝐦𝐢𝐧 𝐮𝐬𝐞𝐫𝐥𝐚𝐧𝐢 𝐭𝐞𝐫𝐢𝐛 𝐠𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐳𝐝𝐚𝐧 𝐛𝐚𝐧𝐥𝐚𝐲𝐝𝐢 - 𝐎𝐝𝐝𝐢𝐲 𝐅𝐨𝐲𝐝𝐚𝐥𝐚𝐧𝐮𝐯𝐜𝐡𝐢𝐥𝐚𝐫𝐠𝐚 𝐬𝐢𝐳𝐧𝐢𝐧𝐠 𝐠𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐳𝐧𝐢 𝐫𝐞𝐤𝐥𝐚𝐦𝐚 𝐪𝐢𝐥𝐚𝐝𝐢</b> '
+    '<tg-emoji emoji-id="5440802843302843874">⭐</tg-emoji> '
+
+)
+
+ADMINS_INFO = (
+    '<tg-emoji emoji-id="5440855774479800882">⭐</tg-emoji> '
+    "<b>𝐀𝐝𝐦𝐢𝐧𝐥𝐚𝐫𝐧𝐢 𝐁𝐨𝐬𝐡𝐪𝐚𝐫𝐚𝐝𝐢 - 𝐎𝐠𝐨𝐡𝐥𝐚𝐧𝐭𝐫𝐢𝐬𝐡 𝐁𝐞𝐫𝐚𝐝𝐢 - 𝟓𝟎 𝐭𝐚𝐠𝐚𝐜𝐡𝐚 𝐁𝐚𝐧𝐥𝐚𝐬𝐡 𝐋𝐢𝐦𝐢𝐭𝐢 - 𝐥𝐢𝐦𝐢𝐭𝐝𝐚𝐧 𝐨'𝐭𝐬𝐚 𝐀𝐝𝐦𝐢𝐧𝐥𝐢𝐤𝐝𝐚𝐧 𝐎𝐥𝐢𝐧𝐚𝐝𝐢</b> "
+    '<tg-emoji emoji-id="5438279988103109482">⭐</tg-emoji> '
+
+)
+
+ACTIVE_INFO = (
+    '<tg-emoji emoji-id="5438525819146233895">⭐</tg-emoji> '
+    "<b>𝐆𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐳𝐝𝐚 𝐀𝐝𝐦𝐢𝐧𝐥𝐚𝐫 𝐕𝐚 𝐎𝐝𝐝𝐢𝐲 𝐅𝐨𝐲𝐝𝐚𝐥𝐚𝐧𝐮𝐯𝐜𝐡𝐢𝐥𝐚𝐫 𝐀𝐤𝐭𝐢𝐯𝐥𝐢𝐤𝐧𝐢 𝐊𝐨'𝐫𝐬𝐡𝐢𝐧𝐠𝐢𝐳 𝐦𝐮𝐦𝐤𝐢𝐧 /aktiv 𝐛𝐮𝐲𝐫𝐮𝐠'𝐢 𝐛𝐢𝐥𝐚𝐧</b> "
+    '<tg-emoji emoji-id="5438279988103109482">⭐</tg-emoji> '
+
+)
+
+GROUP_HELP_INFO = (
+    '<tg-emoji emoji-id="5217763885951520694">⭐</tg-emoji> '
+    '<b>𝐆𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐢𝐳 𝐌𝐚𝐟𝐢𝐚 𝐆𝐮𝐫𝐮𝐡 𝐫𝐞𝐣𝐢𝐦𝐝𝐚 𝐁𝐨𝐬𝐡𝐪𝐚𝐫𝐥𝐚𝐝𝐢</b> '
+    '<tg-emoji emoji-id="5219680536582196906">⭐</tg-emoji> '
+    "<b>𝐌𝐚𝐟𝐢𝐚 𝐎'𝐲𝐢𝐧𝐢 𝐮𝐜𝐡𝐮𝐧 𝐦𝐨𝐬𝐥𝐚𝐬𝐡𝐭𝐫𝐢𝐥𝐠𝐚𝐧 𝐁𝐨𝐭</b> "
+    '<tg-emoji emoji-id="5217952701303788099">⭐</tg-emoji> '
+
+)
+
+def get_bot_about_inline() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="𝐑𝐞𝐤𝐥𝐚𝐦𝐚 𝐍𝐚𝐳𝐨𝐫𝐚𝐭𝐢", callback_data="about_ads", icon_custom_emoji_id="5440770128536951370", style="success")],
+        [InlineKeyboardButton(text="𝐀𝐝𝐦𝐢𝐧𝐥𝐚𝐫 𝐍𝐚𝐳𝐨𝐫𝐚𝐭𝐢", callback_data="about_admins", icon_custom_emoji_id="5440770128536951370", style="success")],
+        [InlineKeyboardButton(text="𝐀𝐤𝐭𝐢𝐯 𝐍𝐚𝐳𝐨𝐫𝐚𝐭𝐢", callback_data="about_active", icon_custom_emoji_id="5440770128536951370", style="success")],
+        [InlineKeyboardButton(text="𝐆𝐫𝐨𝐮𝐩 𝐇𝐞𝐥𝐩 𝐌𝐚𝐟𝐢𝐚 𝐑𝐞𝐣𝐢𝐦 𝐁𝐨𝐭", callback_data="about_group_help", icon_custom_emoji_id="5440770128536951370", style="success")],
+        [InlineKeyboardButton(text="Бахром", url="https://t.me/skroozy", icon_custom_emoji_id="5438105423452335670", style="danger")],
+    ])
+
+def get_about_back_inline() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="𝐎𝐫𝐭𝐠𝐚", callback_data="bot_about", icon_custom_emoji_id="5877341274863832725", style="danger")],
+    ])
 
 def get_roles_inline_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
@@ -357,35 +363,3 @@ def get_admin_country_keyboard() -> InlineKeyboardMarkup:
     ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-get_bot_about_inline = get_bot_about_inline_keyboard
-get_about_back_inline = get_back_inline
-
-
-BOT_ABOUT_TEXT = '<tg-emoji emoji-id="5931415565955503486">⭐</tg-emoji> <b>ʙᴏᴛ xᴀǫɪᴅᴀ ᴍᴀʟᴜᴍᴏᴛ</b> <tg-emoji emoji-id="5370935802844946281">⭐</tg-emoji>\n\n<tg-emoji emoji-id="5371071931833393000">⭐</tg-emoji> <b>𝐌𝐚𝐟𝐢𝐚 𝐆𝐮𝐫𝐮𝐡𝐥𝐚𝐫 𝐔𝐜𝐡𝐮𝐧 𝐏𝐫𝐨 𝐝𝐚𝐫𝐚𝐣𝐚𝐝𝐚𝐠𝐢 𝐁𝐨𝐭</b> <tg-emoji emoji-id="5438186851737299383">⭐</tg-emoji>'
-
-REKLAMA_INFO = (
-    '<tg-emoji emoji-id="5438256705085400686">⭐</tg-emoji> '
-    '<b>𝐆𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐢𝐳𝐠𝐚 𝐑𝐞𝐤𝐥𝐚𝐦𝐚 𝐊𝐞𝐥𝐬𝐚 𝐔𝐥𝐚𝐫𝐧𝐢 𝐗𝐢𝐬𝐨𝐛𝐥𝐚𝐲𝐝𝐢 - 𝐯𝐚 𝐤𝐞𝐥𝐠𝐚𝐧 𝐫𝐞𝐤𝐥𝐚𝐦𝐚𝐠𝐚 𝐚𝐭𝐯𝐞𝐭 𝐪𝐢𝐥𝐚𝐝𝐢 - 𝐲𝐚𝐧𝐢 𝐚𝐯𝐭𝐨 𝐫𝐞𝐤 𝐬𝐳𝐠𝐚 𝐤𝐞𝐥𝐠𝐚𝐧 𝐦𝐚𝐟𝐢𝐚 𝐠𝐮𝐫𝐮𝐡𝐧𝐢 𝐚𝐝𝐦𝐢𝐧 𝐮𝐬𝐞𝐫𝐥𝐚𝐧𝐢 𝐭𝐞𝐫𝐢𝐛 𝐠𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐳𝐝𝐚𝐧 𝐛𝐚𝐧𝐥𝐚𝐲𝐝𝐢 - 𝐎𝐝𝐝𝐢𝐲 𝐅𝐨𝐲𝐝𝐚𝐥𝐚𝐧𝐮𝐯𝐜𝐡𝐢𝐥𝐚𝐫𝐠𝐚 𝐬𝐢𝐳𝐧𝐢𝐧𝐠 𝐠𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐳𝐧𝐢 𝐫𝐞𝐤𝐥𝐚𝐦𝐚 𝐪𝐢𝐥𝐚𝐝𝐢</b> '
-    '<tg-emoji emoji-id="5440802843302843874">⭐</tg-emoji> '
-)
-
-ADMINS_INFO = (
-    '<tg-emoji emoji-id="5440855774479800882">⭐</tg-emoji> '
-    "<b>𝐀𝐝𝐦𝐢𝐧𝐥𝐚𝐫𝐧𝐢 𝐁𝐨𝐬𝐡𝐪𝐚𝐫𝐚𝐝𝐢 - 𝐎𝐠𝐨𝐡𝐥𝐚𝐧𝐭𝐫𝐢𝐬𝐡 𝐁𝐞𝐫𝐚𝐝𝐢 - 𝟓𝟎 𝐭𝐚𝐠𝐚𝐜𝐡𝐚 𝐁𝐚𝐧𝐥𝐚𝐬𝐡 𝐋𝐢𝐦𝐢𝐭𝐢 - 𝐥𝐢𝐦𝐢𝐭𝐝𝐚𝐧 𝐨'𝐭𝐬𝐚 𝐀𝐝𝐦𝐢𝐧𝐥𝐢𝐤𝐝𝐚𝐧 𝐎𝐥𝐢𝐧𝐚𝐝𝐢</b> "
-    '<tg-emoji emoji-id="5438279988103109482">⭐</tg-emoji> '
-)
-
-ACTIVE_INFO = (
-    '<tg-emoji emoji-id="5438525819146233895">⭐</tg-emoji> '
-    "<b>𝐆𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐳𝐝𝐚 𝐀𝐝𝐦𝐢𝐧𝐥𝐚𝐫 𝐕𝐚 𝐎𝐝𝐝𝐢𝐲 𝐅𝐨𝐲𝐝𝐚𝐥𝐚𝐧𝐮𝐯𝐜𝐡𝐢𝐥𝐚𝐫 𝐀𝐤𝐭𝐢𝐯𝐥𝐢𝐤𝐧𝐢 𝐊𝐨'𝐫𝐬𝐡𝐢𝐧𝐠𝐢𝐳 𝐦𝐮𝐦𝐤𝐢𝐧 /aktiv 𝐛𝐮𝐲𝐫𝐮𝐠'𝐢 𝐛𝐢𝐥𝐚𝐧</b> "
-    '<tg-emoji emoji-id="5438279988103109482">⭐</tg-emoji> '
-)
-
-GROUP_HELP_INFO = (
-    '<tg-emoji emoji-id="5217763885951520694">⭐</tg-emoji> '
-    '<b>𝐆𝐮𝐫𝐮𝐡𝐢𝐧𝐠𝐢𝐳 𝐌𝐚𝐟𝐢𝐚 𝐆𝐮𝐫𝐮𝐡 𝐫𝐞𝐣𝐢𝐦𝐝𝐚 𝐁𝐨𝐬𝐡𝐪𝐚𝐫𝐥𝐚𝐝𝐢</b> '
-    '<tg-emoji emoji-id="5219680536582196906">⭐</tg-emoji> '
-    "<b>𝐌𝐚𝐟𝐢𝐚 𝐎'𝐲𝐢𝐧𝐢 𝐮𝐜𝐡𝐮𝐧 𝐦𝐨𝐬𝐥𝐚𝐬𝐡𝐭𝐫𝐢𝐥𝐠𝐚𝐧 𝐁𝐨𝐭</b> "
-    '<tg-emoji emoji-id="5217952701303788099">⭐</tg-emoji> '
-)
