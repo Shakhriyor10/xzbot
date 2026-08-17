@@ -5,7 +5,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
-from config import OWNER_ID, OWNER_IDS
+from config import OWNER_IDS
 
 BTN_USER_1 = "𝗥𝗲𝗸𝗹𝗮𝗺𝗮"
 BTN_USER_2 = "𝗠𝗮𝗳𝗶𝗮 𝗥𝗼𝗹𝗹𝗮𝗿𝗶"

@@ -9,6 +9,7 @@ __pycache__/
 *.before_*
 *.bak
 *.tmp
+*.p
 account_sessions/
 *.session
 *.session-journal

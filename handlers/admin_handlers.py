@@ -5,7 +5,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from config import OWNER_ID
+from config import OWNER_IDS
 from database import (
     get_all_admins,
     get_all_ads_stat,
@@ -21,7 +21,7 @@ class BroadcastState(StatesGroup):
 @router.message(Command("stat"), F.chat.type == "private")
 async def show_bot_stats(message: types.Message):
     all_admins = set(get_all_admins())
-    all_admins.add(OWNER_ID)
+    all_admins.update(OWNER_IDS)
 
     if message.from_user.id not in all_admins:
         return
@@ -42,7 +42,7 @@ async def show_bot_stats(message: types.Message):
 @router.message(Command("reklama"), F.chat.type == "private")
 async def start_broadcast(message: types.Message, state: FSMContext):
     all_admins = set(get_all_admins())
-    all_admins.add(OWNER_ID)
+    all_admins.update(OWNER_IDS)
 
     if message.from_user.id not in all_admins:
         return

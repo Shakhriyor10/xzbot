@@ -23,20 +23,20 @@ from database import (
     save_user,
 )
 from keyboards import (
+    ACTIVE_INFO,
+    ADMINS_INFO,
+    BOT_ABOUT_TEXT,
+    GROUP_HELP_INFO,
+    REKLAMA_INFO,
+    get_about_back_inline,
     get_admin_country_keyboard,
     get_admin_manage_inline,
     get_admin_region_keyboard,
     get_admins_delete_inline,
     get_back_inline,
+    get_bot_about_inline,
     get_main_menu,
     get_roles_inline_keyboard,
-    get_bot_about_inline,
-    get_about_back_inline,
-    BOT_ABOUT_TEXT,
-    REKLAMA_INFO,
-    ADMINS_INFO,
-    ACTIVE_INFO,
-    GROUP_HELP_INFO,
 )
 
 router = Router()
@@ -561,7 +561,7 @@ async def process_screenshot(
     )
 
     all_admins = set(get_all_admins())
-    all_admins.add(OWNER_ID)
+    all_admins.update(OWNER_IDS)
 
     for admin_id in all_admins:
         try:
@@ -750,7 +750,7 @@ async def process_complaint_text(
     )
 
     all_admins = set(get_all_admins())
-    all_admins.add(OWNER_ID)
+    all_admins.update(OWNER_IDS)
 
     recipients = [
         admin_id
@@ -1631,7 +1631,6 @@ async def close_menu_handler(
 # ⚠️ ADMINGA SHIKOYAT — INLINE
 # ============================================================
 
-@router.callback_query(F.data == "menu_complaint")
 async def complaint_menu_callback(
     callback: types.CallbackQuery,
     state: FSMContext
@@ -1697,9 +1696,6 @@ async def complaint_menu_callback(
 # 👤 ADMIN TANLASH
 # ============================================================
 
-@router.callback_query(
-    F.data.startswith("complaint_admin_")
-)
 async def complaint_admin_selected(
     callback: types.CallbackQuery,
     state: FSMContext
@@ -1763,10 +1759,6 @@ async def complaint_admin_selected(
 # 📝 SHIKOYAT MATNI
 # ============================================================
 
-@router.message(
-    AdminComplaintState.waiting_for_complaint_text,
-    F.chat.type == "private"
-)
 async def process_complaint_text_inline(
     message: types.Message,
     state: FSMContext
@@ -2103,20 +2095,21 @@ async def finish_admin_registration(
     except Exception:
         pass
 
-    # Ownerga xabar
-    try:
-        await message.bot.send_message(
-            OWNER_ID,
-            "✅ <b>Yangi admin ro'yxatdan o'tdi va admin qilindi!</b>\n\n"
-            f"🆔 <b>ID:</b> <code>{admin_id}</code>\n"
-            f"👤 <b>Ism-familiya:</b> {full_name or '—'}\n"
-            f"📍 <b>Hudud:</b> {region or '—'}\n"
-            f"📅 <b>Tug'ilgan sana:</b> {birth_date or '—'}\n"
-            f"📱 <b>Telefon:</b> {phone or 'Berilmagan'}",
-            parse_mode="HTML"
-        )
-    except Exception:
-        pass
+    # Barcha ownerlarga xabar
+    for owner_id in OWNER_IDS:
+        try:
+            await message.bot.send_message(
+                owner_id,
+                "✅ <b>Yangi admin ro'yxatdan o'tdi va admin qilindi!</b>\n\n"
+                f"🆔 <b>ID:</b> <code>{admin_id}</code>\n"
+                f"👤 <b>Ism-familiya:</b> {full_name or '—'}\n"
+                f"📍 <b>Hudud:</b> {region or '—'}\n"
+                f"📅 <b>Tug'ilgan sana:</b> {birth_date or '—'}\n"
+                f"📱 <b>Telefon:</b> {phone or 'Berilmagan'}",
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
 
     await message.answer(
         "✅ <b>Admin muvaffaqiyatli qo'shildi!</b>\n\n"

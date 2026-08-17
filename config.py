@@ -15,19 +15,21 @@ def _required_env(name: str) -> str:
 TOKEN = _required_env("BOT_TOKEN")
 
 try:
-    OWNER_IDS = {
+    _OWNER_ID_VALUES = [
         int(x.strip())
         for x in _required_env("OWNER_ID").split(",")
         if x.strip()
-    }
+    ]
 except ValueError as exc:
     raise RuntimeError("OWNER_ID must contain valid integer IDs") from exc
 
-if not OWNER_IDS:
+if not _OWNER_ID_VALUES:
     raise RuntimeError("OWNER_ID must contain at least one ID")
 
+OWNER_IDS = set(_OWNER_ID_VALUES)
+
 # Asosiy owner ID — eski kodlar bilan moslik uchun
-OWNER_ID = min(OWNER_IDS)
+OWNER_ID = _OWNER_ID_VALUES[0]
 
 DB_NAME = os.getenv("DB_NAME", "bot_database.db").strip() or "bot_database.db"
 

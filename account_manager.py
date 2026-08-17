@@ -112,7 +112,7 @@ class AccountManager:
                         self.clients[(owner_user_id, account_id)] = client
                     else:
                         await client.disconnect()
-                except Exception as exc:
+                except Exception:
                     # A broken account must not prevent the bot from starting.
                     logger.exception(
                         "Connected account restore failed for owner=%s account=%s",
@@ -351,7 +351,7 @@ class AccountManager:
             client = await self.get_client(owner_user_id, flow.listen_account_id)
             if flow.handler is not None:
                 client.remove_event_handler(flow.handler)
-        except Exception as exc:
+        except Exception:
             logger.exception("Could not detach username collector for owner=%s", owner_user_id)
         return True
 
